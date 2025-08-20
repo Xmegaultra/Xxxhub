@@ -2,10 +2,8 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
-local UserInputService = game:GetService("UserInputService")
 
---// Criando o GUI
+--// Criando GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AutoCollectGUI"
 ScreenGui.ResetOnSpawn = false
@@ -13,13 +11,13 @@ ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Painel principal
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 250, 0, 120)
-MainFrame.Position = UDim2.new(0.5, -125, 0.5, -60)
+MainFrame.Size = UDim2.new(0, 260, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -75)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
 -- Título
 local Title = Instance.new("TextLabel")
@@ -43,7 +41,7 @@ CloseBtn.TextSize = 18
 CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
 CloseBtn.Parent = MainFrame
 
--- Botão abrir (escondido inicialmente)
+-- Botão abrir (inicialmente escondido)
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 100, 0, 30)
 OpenBtn.Position = UDim2.new(0.5, -50, 0.5, -15)
@@ -55,7 +53,45 @@ OpenBtn.TextColor3 = Color3.fromRGB(255,255,255)
 OpenBtn.Visible = false
 OpenBtn.Parent = ScreenGui
 
--- Função fechar/abrir sem matar script
+-- Indicador de status
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, -20, 0, 25)
+StatusLabel.Position = UDim2.new(0, 10, 0, 40)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+StatusLabel.Text = "Auto-Collect: OFF"
+StatusLabel.Font = Enum.Font.SourceSansBold
+StatusLabel.TextSize = 16
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = MainFrame
+
+-- Botão toggle
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 120, 0, 35)
+ToggleBtn.Position = UDim2.new(0.5, -60, 0, 70)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+ToggleBtn.Text = "Ligar Auto-Collect"
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 16
+ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+ToggleBtn.Parent = MainFrame
+
+-- Variável de controle
+local autoCollectOn = false
+
+-- Toggle função
+ToggleBtn.MouseButton1Click:Connect(function()
+    autoCollectOn = not autoCollectOn
+    if autoCollectOn then
+        StatusLabel.Text = "Auto-Collect: ON"
+        ToggleBtn.Text = "Desligar Auto-Collect"
+    else
+        StatusLabel.Text = "Auto-Collect: OFF"
+        ToggleBtn.Text = "Ligar Auto-Collect"
+    end
+end)
+
+-- Função fechar/abrir GUI
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     OpenBtn.Visible = true
@@ -66,28 +102,21 @@ OpenBtn.MouseButton1Click:Connect(function()
     OpenBtn.Visible = false
 end)
 
---// Auto collect do dinheiro
+-- Função auto-collect
 local function collectMoney()
-    -- Aqui ele procura todos os "Buttons" verdes (ex: dinheiro)
     for i, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("TouchTransmitter") or obj:IsA("ClickDetector") then
-            if obj.Parent and obj.Parent:FindFirstChild("BillboardGui") then
-                local gui = obj.Parent.BillboardGui
-                if gui.Frame and gui.Frame.BackgroundColor3 == Color3.fromRGB(0, 255, 0) then
-                    -- Teleportar jogador pro botão rapidamente e ativar
-                    player.Character.HumanoidRootPart.CFrame = obj.Parent.CFrame
-                    if obj:IsA("ClickDetector") then
-                        fireclickdetector(obj)
-                    end
-                end
+        if obj:IsA("ClickDetector") then
+            local distance = (player.Character.HumanoidRootPart.Position - obj.Parent.Position).Magnitude
+            if distance < 15 then -- só pegar perto
+                fireclickdetector(obj)
             end
         end
     end
 end
 
--- Loop infinito de coleta
+-- Loop de coleta
 RunService.RenderStepped:Connect(function()
-    if MainFrame.Visible then
+    if autoCollectOn then
         collectMoney()
     end
 end)
